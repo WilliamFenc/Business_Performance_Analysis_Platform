@@ -44,3 +44,4 @@ pnpm-debug.log*
 # Claude Code
 .claude/debug/
 .claude/shell-snapshots/
+.env*.local
