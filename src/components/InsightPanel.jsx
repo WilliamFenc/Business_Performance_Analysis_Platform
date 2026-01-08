@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, Fragment } from 'react';
 
 function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
   const availableYears = useMemo(() => {
@@ -6,13 +6,13 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
     return [...labels].reverse();
   }, [labels]);
 
-  const summaryHTML = useMemo(() => {
+  const summaryContent = useMemo(() => {
     if (!selectedYear || !labels || !revenue || !profit) {
-      return '請選擇年份查看分析...';
+      return <div>請選擇年份查看分析...</div>;
     }
 
     const idx = labels.indexOf(selectedYear);
-    if (idx === -1) return '暫無數據';
+    if (idx === -1) return <div>暫無數據</div>;
 
     const curRev = revenue[idx];
     const curPro = profit[idx];
@@ -31,29 +31,36 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
       </svg>
     );
 
-    let html = '';
+    // 基準年度（第一年）
     if (idx === 0) {
-      html = `本期 (${selectedYear}) 為基準年度。營收 <strong>${curRev.toLocaleString()}</strong> 百萬，淨利 <strong>${curPro.toLocaleString()}</strong> 百萬。`;
-    } else {
-      const prevRev = revenue[idx - 1];
-      const prevPro = profit[idx - 1];
-      const prevMar = (prevPro / prevRev * 100).toFixed(1);
-      const revDiff = curRev - prevRev;
-      const proDiff = curPro - prevPro;
-      const marDiff = (curMar - prevMar).toFixed(1);
-      const rClass = revDiff >= 0 ? 'highlight-green' : 'highlight-red';
-      const rIcon = revDiff >= 0 ? iconUp : iconDown;
-      const rPct = ((revDiff / prevRev) * 100).toFixed(1) + '%';
-      const pClass = proDiff >= 0 ? 'highlight-green' : 'highlight-red';
-      const pIcon = proDiff >= 0 ? iconUp : iconDown;
-      const pPct = ((proDiff / Math.abs(prevPro)) * 100).toFixed(1) + '%';
+      return (
+        <div>
+          本期 ({selectedYear}) 為基準年度。營收 <strong>{curRev.toLocaleString()}</strong> 百萬，淨利 <strong>{curPro.toLocaleString()}</strong> 百萬。
+        </div>
+      );
+    }
 
-      let marText = '';
-      if (marDiff > 0) marText = '增加至';
-      else if (marDiff < 0) marText = '減少至';
-      else marText = '持平於';
+    // 比較年度（與前一年比較）
+    const prevRev = revenue[idx - 1];
+    const prevPro = profit[idx - 1];
+    const prevMar = (prevPro / prevRev * 100).toFixed(1);
+    const revDiff = curRev - prevRev;
+    const proDiff = curPro - prevPro;
+    const marDiff = (curMar - prevMar).toFixed(1);
+    const rClass = revDiff >= 0 ? 'highlight-green' : 'highlight-red';
+    const rIcon = revDiff >= 0 ? iconUp : iconDown;
+    const rPct = ((revDiff / prevRev) * 100).toFixed(1) + '%';
+    const pClass = proDiff >= 0 ? 'highlight-green' : 'highlight-red';
+    const pIcon = proDiff >= 0 ? iconUp : iconDown;
+    const pPct = ((proDiff / Math.abs(prevPro)) * 100).toFixed(1) + '%';
 
-      html = (
+    let marText = '';
+    if (marDiff > 0) marText = '增加至';
+    else if (marDiff < 0) marText = '減少至';
+    else marText = '持平於';
+
+    return (
+      <Fragment>
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ fontWeight: 'bold', color: '#666' }}>營收分析</div>
           <div>
@@ -61,8 +68,6 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
             <span style={{ fontSize: '0.9em', color: '#888' }}>(YoY: {rPct})</span>
           </div>
         </div>
-      );
-      html += (
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
           <div style={{ fontWeight: 'bold', color: '#666' }}>獲利能力</div>
           <div>
@@ -70,15 +75,12 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
             <span style={{ fontSize: '0.9em', color: '#888' }}>(YoY: {pPct})</span>
           </div>
         </div>
-      );
-      html += (
         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '10px', alignItems: 'center' }}>
           <div style={{ fontWeight: 'bold', color: '#666' }}>淨利率</div>
           <div>由 {prevMar}% <strong>{marText} {curMar}%</strong>。</div>
         </div>
-      );
-    }
-    return html;
+      </Fragment>
+    );
   }, [selectedYear, labels, revenue, profit]);
 
   return (
@@ -109,7 +111,7 @@ function InsightPanel({ labels, revenue, profit, selectedYear, onYearChange }) {
         </div>
       </div>
       <div id="summaryText" className="insight-content">
-        {summaryHTML}
+        {summaryContent}
       </div>
     </div>
   );

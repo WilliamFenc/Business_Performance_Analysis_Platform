@@ -29,6 +29,45 @@ const client = createClient({
   authToken: TURSO_TOKEN,
 });
 
+// API: 取得特定公司財務資料 (使用 query string 避免中文編碼問題)
+app.get('/api/financial/by-name', async (req, res) => {
+  try {
+    const company = req.query.company;
+    if (!company) {
+      return res.status(400).json({ error: '缺少 company 參數' });
+    }
+
+    const result = await client.execute({
+      sql: `
+        SELECT fd.year, fd.revenue, fd.profit
+        FROM financial_data fd
+        JOIN companies c ON c.id = fd.company_id
+        WHERE c.name = ?
+        ORDER BY fd.year
+      `,
+      args: [company],
+    });
+
+    const labels = [];
+    const revenue = [];
+    const profit = [];
+
+    result.rows.forEach(row => {
+      labels.push(String(row.year));
+      revenue.push(row.revenue);
+      profit.push(row.profit);
+    });
+
+    res.json({
+      company: company,
+      data: { labels, revenue, profit },
+    });
+  } catch (error) {
+    console.error('取得財務資料失敗:', error);
+    res.status(500).json({ error: '取得財務資料失敗', message: error.message });
+  }
+});
+
 // API: 取得所有公司
 app.get('/api/companies', async (req, res) => {
   try {
@@ -44,10 +83,17 @@ app.get('/api/companies', async (req, res) => {
   }
 });
 
-// API: 取得特定公司財務資料
+// API: 取得特定公司財務資料 (使用 query string 避免中文編碼問題)
 app.get('/api/financial/:companyName', async (req, res) => {
   try {
-    const { companyName } = req.params;
+    let companyName;
+    try {
+      companyName = decodeURIComponent(req.params.companyName);
+    } catch {
+      // 如果 decode 失敗，使用原始值
+      companyName = req.params.companyName;
+    }
+
     const result = await client.execute({
       sql: `
         SELECT fd.year, fd.revenue, fd.profit
@@ -56,7 +102,7 @@ app.get('/api/financial/:companyName', async (req, res) => {
         WHERE c.name = ?
         ORDER BY fd.year
       `,
-      args: [decodeURIComponent(companyName)],
+      args: [companyName],
     });
 
     const labels = [];
@@ -70,7 +116,7 @@ app.get('/api/financial/:companyName', async (req, res) => {
     });
 
     res.json({
-      company: decodeURIComponent(companyName),
+      company: companyName,
       data: { labels, revenue, profit },
     });
   } catch (error) {

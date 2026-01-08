@@ -62,7 +62,8 @@ function HomePage() {
 
   const fetchFinancialData = async (companyName) => {
     try {
-      const response = await fetch(`${API_BASE}/financial/${encodeURIComponent(companyName)}`);
+      // 使用 query string 避免 URL 編碼問題
+      const response = await fetch(`${API_BASE}/financial/by-name?company=${encodeURIComponent(companyName)}`);
       if (response.ok) {
         const data = await response.json();
         setFinancialData(data.data);

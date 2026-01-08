@@ -19,7 +19,7 @@ function StatCards({ companyName, labels, revenue, profit }) {
     let avgMar = '0%';
     if (sumRev > 0) avgMar = ((sumPro / sumRev) * 100).toFixed(0) + '%';
 
-    return { avgRev, avgPro, avgMar };
+    return { avgRev, avgProfit: avgPro, avgMar };
   }, [labels, revenue, profit]);
 
   return (
