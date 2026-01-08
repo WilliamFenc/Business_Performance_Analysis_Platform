@@ -259,7 +259,7 @@ function HomePage() {
         onBulkImport={handleBulkImport}
       />
 
-      <div style={{ textAlign: 'right', marginTop: '20px', fontSize: '12px', color: '#999' }}>
+      <div className="author-credit">
         produced by Kevin
       </div>
     </div>

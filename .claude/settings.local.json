@@ -21,7 +21,26 @@
       "Bash(git commit:*)",
       "Bash(git remote add:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__turso__query",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_wait_for",
+      "Bash(vercel --prod:*)",
+      "Bash(vercel rename:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Skill(frontend-design)",
+      "WebSearch",
+      "Bash(npm uninstall:*)",
+      "Bash(timeout:*)",
+      "Bash(cmd.exe /c \"taskkill /F /PID 15712 & taskkill /F /PID 29496 & taskkill /F /PID 30616\")"
     ]
   }
 }

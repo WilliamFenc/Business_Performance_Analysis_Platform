@@ -10,5 +10,17 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+<script type="module">
+	import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+	createChat({
+		webhookUrl: 'https://ptrw0311-n8n-free.hf.space/webhook/1e61ad06-c22e-4427-a7cb-5831076de9e9/chat',
+    initialMessages: [
+		'哈囉! 👋',
+		'我是產業分析小幫手，今天你想知道什麼關於公司經營績效的資訊呢？',
+	],
+	});
+</script>
   </body>
 </html>
