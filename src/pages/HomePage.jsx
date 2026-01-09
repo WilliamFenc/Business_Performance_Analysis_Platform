@@ -260,7 +260,7 @@ function HomePage() {
       />
 
       <div className="author-credit">
-        produced by Kevin
+        produced by 聯稽二處
       </div>
     </div>
   );

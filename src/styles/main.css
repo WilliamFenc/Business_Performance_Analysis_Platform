@@ -600,7 +600,9 @@ body::after {
 
 /* 微調折線圖位置以對齊長條圖中心 */
 .line-chart-layer > div {
-  width: 100% !important;
+  width: 76.5% !important;
+  margin-left: 11.75%;
+  transform: none;
 }
 
 .line-chart-layer svg,
