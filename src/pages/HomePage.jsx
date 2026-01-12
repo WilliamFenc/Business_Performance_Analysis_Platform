@@ -250,6 +250,46 @@ function HomePage() {
             selectedYear={selectedYear}
             onYearChange={handleYearChange}
           />
+
+          {/* PDF 專用擷取區域 - 隱藏顯示，僅供 PDF 匯出使用 */}
+          <div id="pdf-capture-area" style={{ position: 'absolute', left: '-9999px', top: '0', width: '794px', background: '#ffffff', padding: '40px' }}>
+            {/* 標題區 */}
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
+                {selectedCompany}
+              </h2>
+              <div style={{ fontSize: '14px', color: '#64748b' }}>經營績效分析報告</div>
+            </div>
+
+            {/* PDF 版本的績效洞察 */}
+            <div style={{ marginBottom: '30px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '8px', color: '#3b82f6' }}>
+                  <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.55-3 6v3a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-3C6.19 13.55 5 11.38 5 9a7 7 0 0 1 7-7z"></path>
+                  <path d="M9 21h6"></path>
+                </svg>
+                <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b' }}>績效洞察 (Performance Insight)</span>
+              </div>
+              <div id="pdf-insight-content" style={{ fontSize: '14px', lineHeight: '1.8', color: '#475569' }}>
+                {/* 績效洞察內容將由 JavaScript 動態填入 */}
+              </div>
+            </div>
+
+            {/* PDF 版本的圖表區 - 使用圖片方式 */}
+            <div id="pdf-chart-container" style={{ marginBottom: '20px' }}>
+              {/* 圖表將由 JavaScript 動態轉換為圖片 */}
+            </div>
+
+            {/* PDF 版本的淨利率區 */}
+            <div style={{ padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#1e293b', marginBottom: '12px' }}>
+                淨利率 (Net profit margin)
+              </div>
+              <div id="pdf-margin-content" style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap' }}>
+                {/* 淨利率資料將由 JavaScript 動態填入 */}
+              </div>
+            </div>
+          </div>
         </>
       )}
 

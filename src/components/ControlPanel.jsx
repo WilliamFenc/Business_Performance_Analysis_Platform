@@ -90,66 +90,103 @@ function ControlPanel({ companyName, onUpdateData, onBulkImport }) {
   const handleExportPDF = async () => {
     setIsProcessing(true);
     try {
-      const element = document.getElementById('capture-area');
-      if (!element) {
-        alert('找不到匯出區域');
+      // 取得或建立 PDF 擷取區域
+      const pdfArea = document.getElementById('pdf-capture-area');
+      if (!pdfArea) {
+        alert('找不到 PDF 匯出區域');
         return;
       }
 
-      // 準備 PDF 樣式
+      // 取得圖表容器用於截圖
+      const chartContainer = document.querySelector('.chart-nivo-wrapper');
+      if (!chartContainer) {
+        alert('找不到圖表區域');
+        return;
+      }
+
+      // 填入績效洞察內容
+      const summaryText = document.getElementById('summaryText');
       const yearSelector = document.getElementById('yearSelector');
-      const pdfYearLabel = document.getElementById('pdfYearLabel');
-      const pdfCompHeader = document.getElementById('pdfCompanyHeader');
-
-      if (yearSelector && pdfYearLabel) {
-        yearSelector.style.display = 'none';
-        pdfYearLabel.style.display = 'inline';
+      const pdfInsightContent = document.getElementById('pdf-insight-content');
+      if (summaryText && pdfInsightContent) {
+        // 取得當前選擇的分析年度
+        const selectedYear = yearSelector?.value || '';
+        const yearHeader = selectedYear
+          ? `<div style="font-size: 14px; font-weight: bold; color: #666; margin-bottom: 8px; margin-top: 4px;">分析年度：${selectedYear}年度</div>`
+          : '';
+        pdfInsightContent.innerHTML = yearHeader + summaryText.innerHTML;
       }
 
-      if (pdfCompHeader) {
-        pdfCompHeader.innerText = '分析公司：' + companyName;
-        pdfCompHeader.style.display = 'block';
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
+      // 截取圖表並轉為圖片
+      const chartCanvas = await html2canvas(chartContainer, {
+        scale: 4,
         backgroundColor: '#ffffff',
         useCORS: true,
         logging: false,
       });
+      const chartImgData = chartCanvas.toDataURL('image/png');
+      const pdfChartContainer = document.getElementById('pdf-chart-container');
+      if (pdfChartContainer) {
+        pdfChartContainer.innerHTML = `<img src="${chartImgData}" style="width: 100%; height: auto; border-radius: 8px;" />`;
+      }
 
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
+      // 填入淨利率資料
+      const marginLabels = document.querySelectorAll('.margin-value');
+      const pdfMarginContent = document.getElementById('pdf-margin-content');
+      if (pdfMarginContent && marginLabels.length > 0) {
+        let marginHTML = '';
+        marginLabels.forEach((label) => {
+          const year = label.querySelector('.margin-year')?.textContent || '';
+          const percent = label.querySelector('.margin-percent')?.textContent || '';
+          const isActive = label.classList.contains('margin-value-active');
+          marginHTML += `
+            <div style="text-align: center; padding: 8px 16px; background: ${isActive ? '#dbeafe' : '#f1f5f9'}; border-radius: 8px; min-width: 80px;">
+              <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${year}</div>
+              <div style="font-size: 16px; font-weight: bold; color: ${isActive ? '#2563eb' : '#475569'};">${percent}</div>
+            </div>
+          `;
+        });
+        pdfMarginContent.innerHTML = marginHTML;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // 擷取整個 PDF 區域（4K 解析度）
+      const canvas = await html2canvas(pdfArea, {
+        scale: 4,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        width: 794,
+        windowWidth: 794,
+      });
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      // 建立直式 A4 PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
+      const margin = 15;
 
       const imgRatio = canvas.width / canvas.height;
       let finalWidth = pdfWidth - margin * 2;
       let finalHeight = finalWidth / imgRatio;
 
-      if (finalHeight > pdfHeight - margin * 2) {
-        finalHeight = pdfHeight - margin * 2;
-        finalWidth = finalHeight * imgRatio;
-      }
+      const x = margin;
+      const y = margin;
 
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = (pdfHeight - finalHeight) / 2;
       pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
       pdf.save(`${companyName}_經營績效分析.pdf`);
 
-      // 恢復原始樣式
-      if (yearSelector && pdfYearLabel) {
-        yearSelector.style.display = 'inline-block';
-        pdfYearLabel.style.display = 'none';
-      }
-      if (pdfCompHeader) {
-        pdfCompHeader.style.display = 'none';
-      }
+      // 清空 PDF 临时内容
+      if (pdfInsightContent) pdfInsightContent.innerHTML = '';
+      if (pdfChartContainer) pdfChartContainer.innerHTML = '';
+      if (pdfMarginContent) pdfMarginContent.innerHTML = '';
+
     } catch (error) {
       alert('匯出失敗：' + error.message);
+      console.error('PDF export error:', error);
     } finally {
       setIsProcessing(false);
     }
