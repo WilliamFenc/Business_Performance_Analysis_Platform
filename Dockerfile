@@ -35,7 +35,6 @@ COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy the built Frontend assets from the builder stage
-# Vite defaults to 'dist', but check your vite.config.js if it's different
 COPY --from=builder /app/dist ./dist
 
 # Copy your Backend Source Code
