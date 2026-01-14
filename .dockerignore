@@ -1,0 +1,22 @@
+# Git
+.git
+.gitignore
+
+# Secrets
+.env
+
+# AI / IDE configs
+.claude/*
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# ignores files below
+node_modules
+npm-debug.log
+.env.example
+CLAUDE.md
+vercel.json
