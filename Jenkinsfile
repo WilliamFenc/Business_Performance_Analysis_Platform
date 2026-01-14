@@ -37,7 +37,7 @@ pipeline {
     }
 
     environment {
-        IMAGE_NAME = "bussiness_analyze:${params.TAG_NAME}_${params.ENV}"
+        IMAGE_NAME = "bussiness_analyze_${params.ENV}:${params.TAG_NAME}"
         CONTAINER_NAME = "${params.CONTAINER_NAME}"
         ENV_SECRET_ID = 'bussiness-analyze-env' 
     }
