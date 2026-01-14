@@ -93,7 +93,9 @@ pipeline {
                         
                         // We copy the secret file to the workspace as '.env' to ensure Docker can mount it 
                         // regardless of agent path complexities.
-                        sh 'cp $MY_ENV_FILE .env'
+                        sh """
+                        cat "\${MY_ENV_FILE}" > .env
+                        """
                         
                         sh """
                         # Remove old container if it exists
