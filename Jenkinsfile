@@ -42,6 +42,10 @@ pipeline {
         ENV_SECRET_ID = 'bussiness-analyze-env' 
     }
 
+    options {
+        skipDefaultCheckout()
+    }
+
     stages {
         stage('Checkout') {
             steps {
