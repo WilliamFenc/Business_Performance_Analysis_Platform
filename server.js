@@ -382,7 +382,7 @@ app.get('*', (req, res) => {
 });
 
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0',() => {
   console.log(`\n🚀 本地 API Server 運行在 http://localhost:${PORT}`);
   console.log(`📊 Turso 資料庫: ${TURSO_URL?.split('///')[0]}///...\n`);
 });

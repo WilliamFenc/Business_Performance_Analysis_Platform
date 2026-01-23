@@ -21,17 +21,17 @@ pipeline {
         )
         string(
             name: 'CONTAINER_NAME',
-            defaultValue: 'dev_jenkins',
+            defaultValue: 'will_bussiness',
             description: 'Docker container name'
         )
         string(
             name: 'PORT_FORWARD',
-            defaultValue: '3000',
+            defaultValue: '4545',
             description: 'Host port to forward to container port'
         )
         string(
             name: 'BRANCH_TO_BUILD',
-            defaultValue: 'main',
+            defaultValue: 'feature/adding-cicd',
             description: 'Which GitHub branch to pull and build?'
         )
     }
@@ -108,6 +108,7 @@ pipeline {
                         # Run new container with --env-file
                         docker run -d \\
                             --name ${CONTAINER_NAME} \\
+                            --network my_secure_stack_business_net \\
                             -p ${params.PORT_FORWARD}:3000 \\
                             --env-file .env \\
                             ${IMAGE_NAME}
