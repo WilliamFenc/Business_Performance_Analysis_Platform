@@ -12,15 +12,33 @@
     <script type="module" src="/src/main.jsx"></script>
     <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
 <script type="module">
-	import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
 
-	createChat({
-		webhookUrl: 'https://ptrw0311-n8n-free.hf.space/webhook/1e61ad06-c22e-4427-a7cb-5831076de9e9/chat',
-    initialMessages: [
-		'哈囉! 👋',
-		'我是財務機器人，今天你想知道什麼公司財務資訊或損益表的內容呢，例如你可以查詢 博弘雲端歷年的"營業收入合計"是多少？',
-	],
-	});
-</script>
+        createChat({
+            // This points to your local FastAPI server
+            // webhookUrl: 'http://127.0.0.1:8000/chat',
+            webhookUrl: 'http://10.1.110.11:7850/chat',
+            mode: 'window', 
+            showWelcomeScreen: true,
+            initialMessages: [
+                '您好! 👋',
+                '我是財報查詢助理，有什麼需要我幫忙的嗎?'
+            ],
+            i18n: {
+                en: {
+                    title: '財務分析助理',
+                    subtitle: "",
+                    footer: '',
+                    getStarted: '開啟新的對話',
+                    inputPlaceholder: '輸入您的問題..',
+                },
+            },
+            theme: {
+                button: {
+                    backgroundColor: '#007bff',
+                }
+            }
+        });
+    </script>
   </body>
 </html>
