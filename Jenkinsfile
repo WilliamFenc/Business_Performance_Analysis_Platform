@@ -15,29 +15,26 @@ pipeline {
             description: 'Uncheck this if you want to skip building and use the existing image cache.'
         )
         string(
-            name: 'TAG_NAME',
+            name: 'VERSION',
             defaultValue: 'latest',
-            description: 'Docker tag name'
+            description: 'Current project version'
         )
         string(
             name: 'CONTAINER_NAME',
-            defaultValue: 'will_bussiness',
             description: 'Docker container name'
         )
         string(
             name: 'PORT_FORWARD',
-            defaultValue: '4545',
             description: 'Host port to forward to container port'
         )
         string(
             name: 'BRANCH_TO_BUILD',
-            defaultValue: 'feature/adding-cicd',
             description: 'Which GitHub branch to pull and build?'
         )
     }
 
     environment {
-        IMAGE_NAME = "bussiness_analyze_${params.ENV}:${params.TAG_NAME}"
+        IMAGE_NAME = "bussiness_analyze_${params.ENV}:${params.VERSION}"
         CONTAINER_NAME = "${params.CONTAINER_NAME}"
         ENV_SECRET_ID = 'bussiness-analyze-env' 
     }
