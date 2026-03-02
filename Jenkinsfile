@@ -36,7 +36,7 @@ pipeline {
     environment {
         IMAGE_NAME = "bussiness_analyze_${params.ENV}:${params.VERSION}"
         CONTAINER_NAME = "${params.CONTAINER_NAME}"
-        ENV_SECRET_ID = 'bussiness-analyze-env' 
+        // 根據環境選擇不同的 Secret File（使用 script 區塊設定）
     }
 
     options {
@@ -87,10 +87,16 @@ pipeline {
         stage('Deploy Container') {
             steps {
                 script {
+                    // 根據環境選擇不同的 Secret File
+                    def envSecretId = params.ENV == 'prod'
+                        ? 'bussiness-analyze-env-prod'
+                        : 'bussiness-analyze-env'
+
                     echo "Deploying container with .env file from Jenkins..."
+                    echo "Using environment secret: ${envSecretId}"
                     
                     // This block retrieves the Secret File from Jenkins and assigns its path to 'MY_ENV_FILE'
-                    withCredentials([file(credentialsId: "${ENV_SECRET_ID}", variable: 'MY_ENV_FILE')]) {
+                    withCredentials([file(credentialsId: envSecretId, variable: 'MY_ENV_FILE')]) {
                         
                         // We copy the secret file to the workspace as '.env' to ensure Docker can mount it 
                         // regardless of agent path complexities.

@@ -2,25 +2,50 @@
 <html lang="zh-TW">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/chart-icon.svg" />
+    <link rel="icon" type="image/png" href="/assets/robot-CX9_Odt1.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="多公司經營績效分析平台 - 財務資料視覺化與分析工具" />
-    <title>經營績效分析平台</title>
+    <meta name="description" content="聯稽財務分析機器人 - 財務資料視覺化與分析工具" />
+    <title>聯稽財務分析機器人</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+    <style>
+      textarea[data-test-id="chat-input"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+    </style>
 <script type="module">
-	import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
 
-	createChat({
-		webhookUrl: 'https://ptrw0311-n8n-free.hf.space/webhook/1e61ad06-c22e-4427-a7cb-5831076de9e9/chat',
-    initialMessages: [
-		'哈囉! 👋',
-		'我是產業分析小幫手，今天你想知道什麼關於公司經營績效的資訊呢？',
-	],
-	});
-</script>
+        createChat({
+            // This points to your local FastAPI server
+            // webhookUrl: 'http://127.0.0.1:8000/chat',
+            webhookUrl: 'http://10.1.110.11:7850/chat',
+            mode: 'window', 
+            showWelcomeScreen: true,
+            initialMessages: [
+                '您好! 👋',
+                '我是聯稽財務分析機器人，有什麼需要我幫忙的嗎?'
+            ],
+            i18n: {
+                en: {
+                    title: '聯稽財務分析機器人',
+                    subtitle: "",
+                    footer: '',
+                    getStarted: '開啟新的對話',
+                    inputPlaceholder: '輸入您的問題..',
+                },
+            },
+            theme: {
+                button: {
+                    backgroundColor: '#007bff',
+                }
+            }
+        });
+    </script>
   </body>
 </html>

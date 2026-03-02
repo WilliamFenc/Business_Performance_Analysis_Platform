@@ -1,27 +1,60 @@
 /**
  * DataManagerTabs - 數據管理視圖切換標籤
- * 提供表格視圖與快速新增視圖的切換
+ * 提供財務報表與損益表的切換，以及 Excel 匯入/匯出功能
  */
-function DataManagerTabs({ activeTab, onTabChange, tableContent, quickAddContent }) {
+import ExcelImportButton from './ExcelImportButton';
+import ExcelExportButton from './ExcelExportButton';
+
+function DataManagerTabs({
+  activeReportTab = 'financial-basics',
+  onTabChange,
+  financialBasicsContent,
+  plIncomeContent,
+  onAddNew,
+  onImportStart,
+  onImportComplete,
+  onImportError,
+  exportFilters = {}
+}) {
   return (
     <div>
-      <div className="data-manager-tabs">
-        <button
-          className={`tab-button ${activeTab === 'quick-add' ? 'active' : ''}`}
-          onClick={() => onTabChange('quick-add')}
-        >
-          ⚡ 快速新增
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'table' ? 'active' : ''}`}
-          onClick={() => onTabChange('table')}
-        >
-          📋 數據表格
-        </button>
+      <div className="data-manager-header">
+        <div className="data-manager-tabs">
+          <button
+            className={`tab-button ${activeReportTab === 'financial-basics' ? 'active' : ''}`}
+            onClick={() => onTabChange('financial-basics')}
+          >
+            📊 財務報表
+          </button>
+          <button
+            className={`tab-button ${activeReportTab === 'pl-income' ? 'active' : ''}`}
+            onClick={() => onTabChange('pl-income')}
+          >
+            💰 損益表
+          </button>
+        </div>
+
+        <div className="data-manager-actions">
+          <button
+            className="btn-primary"
+            onClick={() => onAddNew(activeReportTab)}
+          >
+            + 新增資料
+          </button>
+          <ExcelImportButton
+            onImportStart={onImportStart}
+            onImportComplete={onImportComplete}
+            onError={onImportError}
+          />
+          <ExcelExportButton
+            tableType={activeReportTab}
+            filters={exportFilters}
+          />
+        </div>
       </div>
 
       <div className="tab-content">
-        {activeTab === 'table' ? tableContent : quickAddContent}
+        {activeReportTab === 'financial-basics' ? financialBasicsContent : plIncomeContent}
       </div>
     </div>
   );

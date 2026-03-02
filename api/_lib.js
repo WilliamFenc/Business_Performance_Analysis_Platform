@@ -1,15 +1,26 @@
 // 共用資料庫客戶端
-import { createClient } from '@libsql/client';
+import { createClient } from '@supabase/supabase-js';
 
-export function getTursoClient() {
-  const url = process.env.TURSO_DATABASE_URL || process.env.VITE_TURSO_DATABASE_URL;
-  const token = process.env.TURSO_AUTH_TOKEN || process.env.VITE_TURSO_AUTH_TOKEN;
+// 單位轉換函式：千元 → 百萬元
+export function convertToMillions(valueInThousands) {
+  if (valueInThousands === null || valueInThousands === undefined) {
+    return 0;
+  }
+  const numValue = typeof valueInThousands === 'string'
+    ? parseFloat(valueInThousands)
+    : valueInThousands;
+  return numValue / 1000;
+}
 
-  if (!url || !token) {
-    throw new Error('缺少 Turso 資料庫設定');
+export function getSupabaseClient() {
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error('缺少 Supabase 資料庫設定');
   }
 
-  return createClient({ url, authToken: token });
+  return createClient(url, key);
 }
 
 // CORS 回應標頭
@@ -51,3 +62,6 @@ export function successResponse(data, status = 200) {
     },
   });
 }
+
+// 匯出資料庫抽象層
+export { getDatabaseAdapter, createRepository, getDatabaseType } from '../lib/database/repository.js';

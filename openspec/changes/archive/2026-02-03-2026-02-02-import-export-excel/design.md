@@ -1,0 +1,416 @@
+# 設計文件：Excel 匯入/匯出功能
+
+## 系統架構
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              前端 (React)                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  DataManagerTabs.jsx                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  [財務報表] [損益表]  [+ 新增] [📥 Excel匯入] [📤 Excel匯出]     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │              │                            │
+│                              ▼              ▼                            │
+│  ┌────────────────────────┐  ┌────────────────────────┐                │
+│  │  ExcelImportButton     │  │  ExcelExportButton     │                │
+│  │  - 檔案選擇器           │  │  - 範圍選擇             │                │
+│  │  - 觸發 ImportPreview  │  │  - 呼叫 Export API      │                │
+│  └────────────────────────┘  └────────────────────────┘                │
+│              │                                                         │
+│              ▼                                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                    ImportPreviewModal                            │    │
+│  │  - 顯示將新增/更新的筆數                                          │    │
+│  │  - 顯示無法對應的欄位警告                                         │    │
+│  │  - 確認後執行匯入                                                 │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                              │                                         │
+│                              ▼                                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │                       ImportResultToast                          │    │
+│  │  - 成功/失敗筆數通知                                             │    │
+│  │  - 重新整理表格按鈕                                               │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP API
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              後端 (Vercel Functions)                    │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  /api/financial-basics/                                                  │
+│  ├── POST /batch-import  ──► 批次 Upsert financial_basics               │
+│  └── GET  /export         ──► 生成 Excel 並下載                         │
+│                                                                          │
+│  /api/pl-income/                                                          │
+│  ├── POST /batch-import  ──► 批次 Upsert pl_income_basics               │
+│  └── GET  /export         ──► 生成 Excel 並下載                         │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           Supabase (PostgreSQL)                          │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────────────────────────────┐  ┌─────────────────────────────┐  │
+│  │  financial_basics                │  │  pl_income_basics           │  │
+│  │  - PK: (fiscal_year, tax_id)     │  │  - PK: (fiscal_year, tax_id)│  │
+│  │  - 80+ 欄位                      │  │  - 26 欄位                  │  │
+│  └──────────────────────────────────┘  └─────────────────────────────┘  │
+│                                                                          │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+## 欄位對應機制
+
+### 對應流程圖
+
+```
+                    ┌─────────────────┐
+                    │   Excel 檔案    │
+                    │  第 1 列：中文  │
+                    │  第 2 列：英文  │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  步驟 1：讀取   │
+                    │  Excel 結構     │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  步驟 2：主要規則│
+                    │  英文名稱 →      │
+                    │  column_name     │
+                    └────────┬────────┘
+                             │
+                ┌────────────┴────────────┐
+                │                         │
+                ▼                         ▼
+        ┌───────────────┐         ┌───────────────┐
+        │ 對應成功       │         │ 對應失敗       │
+        │ 加入 mapping   │         │ 嘗試次要規則   │
+        └───────────────┘         └───────┬───────┘
+                                          │
+                                          ▼
+                                  ┌─────────────────┐
+                                  │  步驟 3：次要規則│
+                                  │  中文名稱 →      │
+                                  │  column_desc     │
+                                  └────────┬────────┘
+                                           │
+                               ┌───────────┴───────────┐
+                               │                       │
+                               ▼                       ▼
+                       ┌───────────────┐       ┌───────────────┐
+                       │ 對應成功       │       │ 對應失敗       │
+                       │ 加入 mapping   │       │ 記錄警告       │
+                       └───────────────┘       └───────────────┘
+```
+
+### 程式碼範例
+
+```javascript
+async function mapExcelColumns(excelHeaders, tableName) {
+  // 1. 從資料庫取得欄位資訊
+  const columns = await db.query(`
+    SELECT column_name, column_description
+    FROM information_schema.columns
+    WHERE table_name = $1
+  `, [tableName]);
+
+  // 2. 建立對應表
+  const mapping = new Map();
+  const warnings = [];
+
+  // 主要規則：英文名稱 → column_name
+  excelHeaders.english.forEach((engName, index) => {
+    const match = columns.find(col => col.column_name === engName);
+    if (match) {
+      mapping.set(match.column_name, index);
+    }
+  });
+
+  // 次要規則：中文名稱 → column_description
+  excelHeaders.chinese.forEach((chiName, index) => {
+    const match = columns.find(col => col.column_description === chiName);
+    if (match && !mapping.has(match.column_name)) {
+      mapping.set(match.column_name, index);
+    }
+  });
+
+  return { mapping, warnings };
+}
+```
+
+## Upsert 邏輯
+
+### 流程圖
+
+```
+                    ┌─────────────────┐
+                    │  收到 Excel 資料 │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  驗證必要欄位    │
+                    │  fiscal_year     │
+                    │  tax_id          │
+                    └────────┬────────┘
+                             │
+                ┌────────────┴────────────┐
+                │                         │
+                ▼                         ▼
+        ┌───────────────┐         ┌───────────────┐
+        │ 驗證通過       │         │ 驗證失敗       │
+        └───────┬───────┘         └───────┬───────┘
+                │                         │
+                ▼                         ▼
+        ┌───────────────┐         ┌───────────────┐
+        │ 查詢資料庫     │         │ 記錄錯誤       │
+        │ PK 是否存在    │         │ 跳過該筆       │
+        └───────┬───────┘         └───────────────┘
+                │
+        ┌───────┴───────┐
+        │               │
+        ▼               ▼
+┌───────────────┐ ┌───────────────┐
+│ PK 存在       │ │ PK 不存在     │
+│ → UPDATE      │ │ → INSERT      │
+└───────────────┘ └───────────────┘
+```
+
+### SQL 實作
+
+```sql
+-- 使用 INSERT ... ON CONFLICT 進行 Upsert
+INSERT INTO financial_basics (
+  fiscal_year, tax_id, company_name, account_item,
+  cash_equivalents, ar_net, ...
+) VALUES (
+  $1, $2, $3, $4, $5, $6, ...
+)
+ON CONFLICT (fiscal_year, tax_id)
+DO UPDATE SET
+  company_name = EXCLUDED.company_name,
+  account_item = EXCLUDED.account_item,
+  cash_equivalents = EXCLUDED.cash_equivalents,
+  ar_net = EXCLUDED.ar_net,
+  ...
+  updated_at = NOW();
+```
+
+## 匯入預覽邏輯
+
+### 兩階段匯入
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  階段一：前端解析與預覽                                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. 使用 XLSX.js 在瀏覽器端解析 Excel                                │
+│  2. 執行欄位對應（模擬後端邏輯）                                      │
+│  3. 統計：                                                          │
+│     - 將新增的筆數（PK 不存在）                                       │
+│     - 將更新的筆數（PK 存在）                                         │
+│     - 可能的錯誤                                                     │
+│  4. 顯示 ImportPreviewModal                                         │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼ 確認
+┌─────────────────────────────────────────────────────────────────────┐
+│  階段二：後端執行匯入                                               │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  1. 接收前端解析後的資料                                             │
+│  2. 執行批次 Upsert                                                  │
+│  3. 回傳實際執行結果                                                 │
+│  4. 前端顯示 ImportResultToast                                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+## Excel 樣式設計
+
+### 匯出格式規範
+
+| 元素 | 樣式設定 |
+|------|----------|
+| 第 1 列（中文） | 粗體、背景色 `#E8E8E8`、字型大小 12 |
+| 第 2 列（英文） | 灰色文字、字型大小 10、斜體 |
+| 資料列 | 一般文字、字型大小 11 |
+| 數值欄位 | 千分位分隔、無小數位 |
+| 凍結窗格 | 凍結前 2 列 |
+
+### ExcelJS 實作範例
+
+```javascript
+import ExcelJS from 'exceljs';
+
+async function generateExcel(data, tableName) {
+  const workbook = new ExcelJS.Workbook();
+  const sheetName = tableName === 'financial_basics' ? '財務報表' : '損益表';
+  const sheet = workbook.addWorksheet(sheetName);
+
+  // 取得欄位資訊
+  const columns = await getTableColumns(tableName);
+
+  // 第 1 列：中文標題
+  const headerRow1 = sheet.addRow(columns.map(c => c.column_description));
+  headerRow1.font = { bold: true, size: 12 };
+  headerRow1.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE8E8E8' }
+  };
+
+  // 第 2 列：英文標題
+  const headerRow2 = sheet.addRow(columns.map(c => c.column_name));
+  headerRow2.font = { italic: true, size: 10, color: { argb: 'FF808080' } };
+
+  // 資料列
+  data.forEach(row => {
+    sheet.addRow(columns.map(c => row[c.column_name] || ''));
+  });
+
+  // 凍結前 2 列
+  sheet.views = [{ state: 'frozen', ySplit: 2 }];
+
+  // 設定欄寬
+  sheet.columns = columns.map(c => ({
+    key: c.column_name,
+    width: Math.max(c.column_name.length, c.column_description.length) + 2
+  }));
+
+  return workbook;
+}
+```
+
+## 錯誤處理策略
+
+### 前端錯誤處理
+
+```javascript
+try {
+  // 解析 Excel
+  const parsed = await parseExcelFile(file);
+
+  // 顯示預覽
+  showPreview(parsed);
+} catch (error) {
+  if (error.code === 'INVALID_FILE_FORMAT') {
+    showError('請選擇 .xlsx 格式的檔案');
+  } else if (error.code === 'MISSING_REQUIRED_SHEET') {
+    showError('Excel 檔案缺少必要的工作表');
+  } else {
+    showError('檔案解析失敗：' + error.message);
+  }
+}
+```
+
+### 後端錯誤處理
+
+```javascript
+export async function POST(request) {
+  try {
+    const { records } = await request.json();
+
+    const results = {
+      inserted: 0,
+      updated: 0,
+      skipped: 0,
+      errors: []
+    };
+
+    for (const [index, record] of records.entries()) {
+      // 驗證必要欄位
+      if (!record.fiscal_year || !record.tax_id) {
+        results.skipped++;
+        results.errors.push({
+          row: index + 1,
+          reason: '缺少必要欄位 fiscal_year 或 tax_id'
+        });
+        continue;
+      }
+
+      // 執行 Upsert
+      const result = await upsertRecord(record);
+      if (result.action === 'insert') {
+        results.inserted++;
+      } else {
+        results.updated++;
+      }
+    }
+
+    return successResponse({ data: results });
+  } catch (error) {
+    return errorResponse('匯入失敗：' + error.message, 500);
+  }
+}
+```
+
+## 效能考量
+
+### 批次處理優化
+
+| 優化項目 | 說明 |
+|----------|------|
+| 批次 Insert | 使用單一 SQL 陳述式插入多筆記錄 |
+| 交易處理 | 將整個批次放在單一交易中 |
+| 並行處理 | 財務報表與損益表可並行處理 |
+
+### 檔案大小限制
+
+| 項目 | 限制 |
+|------|------|
+| 單次匯入筆數 | 1000 筆 |
+| 檔案大小 | 10 MB |
+| 超時時間 | 60 秒（Vercel Pro） |
+
+## 安全性考量
+
+| 項目 | 實作方式 |
+|------|----------|
+| 檔案類型驗證 | 只接受 .xlsx 副檔名 |
+| 內容驗證 | 驗證 Sheet 名稱、欄位格式 |
+| SQL Injection | 使用參數化查詢 |
+| 權限控制 | 需要 JWT 驗證 |
+| 讀取大小限制 | 限制上傳檔案大小 |
+
+## 實作筆記
+
+### 2026-02-03 編碼問題修正
+
+**問題**: Excel 匯入時 `company_name` 和 `account_item` 欄位出現亂碼。
+
+**原因**: XLSX.js 預設使用 `raw: true` 模式讀取資料，導致中文字串編碼錯誤。
+
+**解決方案**:
+```javascript
+// 修改前
+const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+// 修改後
+const jsonData = XLSX.utils.sheet_to_json(sheet, {
+  header: 1,
+  raw: false,      // 確保中文字串正確解析
+  defval: null     // 統一空值處理
+});
+```
+
+### 實作差異說明
+
+| 規格 | 實際實作 | 說明 |
+|------|----------|------|
+| Vercel Functions | Express Server (`server.js`) | 簡化本地開發與測試 |
+| 分開的匯出端點 | 統一 `/api/financial-basics/export` | 一次輸出兩個 Sheet |
+| ImportResultToast 組件 | 整合至 ImportPreviewModal | 簡化組件結構 |

@@ -1,0 +1,152 @@
+{
+  "bars": [
+    {
+      "index": 0,
+      "attrX": 0,
+      "attrWidth": 140,
+      "attrCenterX": 70,
+      "actualLeft": 211,
+      "actualWidth": 140,
+      "actualCenterX": 281,
+      "fill": "#e2e8f0"
+    },
+    {
+      "index": 1,
+      "attrX": 0,
+      "attrWidth": 140,
+      "attrCenterX": 70,
+      "actualLeft": 398,
+      "actualWidth": 140,
+      "actualCenterX": 468,
+      "fill": "#e2e8f0"
+    },
+    {
+      "index": 2,
+      "attrX": 0,
+      "attrWidth": 140,
+      "attrCenterX": 70,
+      "actualLeft": 585,
+      "actualWidth": 140,
+      "actualCenterX": 655,
+      "fill": "#e2e8f0"
+    },
+    {
+      "index": 3,
+      "attrX": 0,
+      "attrWidth": 140,
+      "attrCenterX": 70,
+      "actualLeft": 772,
+      "actualWidth": 140,
+      "actualCenterX": 842,
+      "fill": "#e2e8f0"
+    },
+    {
+      "index": 4,
+      "attrX": 0,
+      "attrWidth": 140,
+      "attrCenterX": 70,
+      "actualLeft": 959,
+      "actualWidth": 140,
+      "actualCenterX": 1029,
+      "fill": "#3b82f6"
+    }
+  ],
+  "points": [
+    {
+      "index": 4,
+      "attrCX": 0,
+      "actualLeft": 143.22000122070312,
+      "actualWidth": 10,
+      "actualCenterX": 148.22000122070312,
+      "r": 5,
+      "fill": "#ffffff",
+      "stroke": "#e67e22"
+    },
+    {
+      "index": 3,
+      "attrCX": 0,
+      "actualLeft": 388.7200012207031,
+      "actualWidth": 10,
+      "actualCenterX": 393.7200012207031,
+      "r": 5,
+      "fill": "#ffffff",
+      "stroke": "#e67e22"
+    },
+    {
+      "index": 2,
+      "attrCX": 0,
+      "actualLeft": 634.219970703125,
+      "actualWidth": 10,
+      "actualCenterX": 639.219970703125,
+      "r": 5,
+      "fill": "#ffffff",
+      "stroke": "#e67e22"
+    },
+    {
+      "index": 1,
+      "attrCX": 0,
+      "actualLeft": 879.719970703125,
+      "actualWidth": 10,
+      "actualCenterX": 884.719970703125,
+      "r": 5,
+      "fill": "#ffffff",
+      "stroke": "#e67e22"
+    },
+    {
+      "index": 0,
+      "attrCX": 0,
+      "actualLeft": 1125.219970703125,
+      "actualWidth": 10,
+      "actualCenterX": 1130.219970703125,
+      "r": 5,
+      "fill": "#ffffff",
+      "stroke": "#e67e22"
+    }
+  ],
+  "offsets": [
+    {
+      "index": 0,
+      "barCenterX": 281,
+      "pointCenterX": 148.22000122070312,
+      "offset": -132.77999877929688,
+      "offsetDescription": "點在左側 132.78px"
+    },
+    {
+      "index": 1,
+      "barCenterX": 468,
+      "pointCenterX": 393.7200012207031,
+      "offset": -74.27999877929688,
+      "offsetDescription": "點在左側 74.28px"
+    },
+    {
+      "index": 2,
+      "barCenterX": 655,
+      "pointCenterX": 639.219970703125,
+      "offset": -15.780029296875,
+      "offsetDescription": "點在左側 15.78px"
+    },
+    {
+      "index": 3,
+      "barCenterX": 842,
+      "pointCenterX": 884.719970703125,
+      "offset": 42.719970703125,
+      "offsetDescription": "點在右側 42.72px"
+    },
+    {
+      "index": 4,
+      "barCenterX": 1029,
+      "pointCenterX": 1130.219970703125,
+      "offset": 101.219970703125,
+      "offsetDescription": "點在右側 101.22px"
+    }
+  ],
+  "debugInfo": {
+    "totalRectsFound": 7,
+    "filteredRects": 5,
+    "totalCirclesFound": 5,
+    "filteredCircles": 5
+  },
+  "averageOffset": -15.78001708984375,
+  "maxOffset": 132.77999877929688,
+  "minOffset": 15.780029296875
+}

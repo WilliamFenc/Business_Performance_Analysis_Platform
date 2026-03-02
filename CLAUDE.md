@@ -1,21 +1,37 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 專案概述
 
-多公司經營績效分析平台 — 使用 React + Vite + Express + Turso 的全端應用，提供財務資料視覺化與分析功能。
+多公司經營績效分析平台 — 全端應用，前端使用 React + Vite，後端部署為 Vercel Serverless Functions，資料庫使用 Turso SQLite。
 
 ## 常用指令
 
 ```bash
-# 開發（同時啟動前端與後端）
-npm run dev
-
-# 僅啟動 Vite 前端
+# 開發（僅啟動 Vite 前端，後端用 Vercel Functions）
 npm run dev:sep
 
-# 僅啟動 Express 後端
+# 本地啟動 Express 後端（開發除錯用）
 npm run server
 
 # 建置
@@ -27,8 +43,14 @@ npm run build:github
 # 執行 Playwright 測試
 npm test
 
+# 單一測試檔案
+npx playwright test tests/{filename}
+
 # Lint
 npm run lint
+
+# 部署到 Vercel 生產環境
+npx vercel --prod
 ```
 
 ## 技術架構
@@ -41,13 +63,53 @@ npm run lint
 - **html2canvas, jsPDF** - PDF 匯出
 - **XLSX** - Excel 處理
 
-### 後端
-- **Express 4.22.1**（`localhost:3000`）
-- **@libsql/client** - Turso SQLite 資料庫客戶端
-- **CORS** - 跨域支援
+### 後端（Vercel Serverless Functions）
+- **API 目錄**: `api/`
+- **Runtime**: Node.js 18.x
+- **資料庫**: Turso SQLite（@libsql/client）
 
 ### 測試
 - **Playwright 1.49.1** - E2E 測試（測試目錄: `./tests`）
+
+## Vercel Serverless Functions 架構
+
+本專案使用 Vercel Serverless Functions 作為後端 API。API 檔案放在 `api/` 目錄下，每個檔案對應一個端點。
+
+### API 檔案結構
+```
+api/
+├── _lib.js                    # 共用函式庫（Turso client、CORS、回應格式）
+├── companies.js               # GET /api/companies
+├── export.js                  # GET /api/export
+└── financial/
+    ├── all.js                 # GET /api/financial/all
+    ├── by-name.js             # GET /api/financial/by-name?company=xxx
+    ├── bulk.js                # POST /api/financial/bulk
+    ├── index.js               # POST /api/financial
+    └── [companyId]/[year]/    # DELETE /api/financial/:id/:year
+        └── index.js
+```
+
+### Serverless Function 格式
+使用 named exports（GET, POST, DELETE, OPTIONS）：
+
+```javascript
+export async function GET(request) {
+  // 處理 GET 請求
+  const client = getTursoClient();
+  const result = await client.execute('SELECT ...');
+  return successResponse({ data: result.rows });
+}
+
+export async function OPTIONS() {
+  return handleOptions(); // CORS 處理
+}
+```
+
+### 重要限制
+- **執行時間**: 最大 10 秒（Hobby）或 60 秒（Pro）
+- **冷啟動**: 閒置函數首次請求會有延遲
+- **環境變數**: 在 Vercel Dashboard 設定（TURSO_DATABASE_URL, TURSO_AUTH_TOKEN）
 
 ## 資料庫結構
 
@@ -67,34 +129,28 @@ npm run lint
 
 **約束**: `(company_id, year)` 為 UNIQUE，使用 `INSERT ... ON CONFLICT DO UPDATE` 進行 upsert。
 
-## API 端點
-
-| 方法 | 端點 | 說明 |
-|------|------|------|
-| GET | `/api/companies` | 取得所有公司列表 |
-| GET | `/api/financial/by-name?company={名稱}` | 取得特定公司財務資料（使用 query string 避免中文編碼問題）|
-| GET | `/api/financial/:companyName` | 取得特定公司財務資料（URL 參數）|
-| POST | `/api/financial` | 新增/更新單筆財務資料 |
-| POST | `/api/financial/bulk` | 批量匯入財務資料 |
-| GET | `/api/export` | 匯出所有資料為 Excel |
-
 ## 前端架構
 
-### 組件樹
+### 主要組件
 ```
 App.jsx (路由)
 └── HomePage.jsx (主要頁面，全局狀態管理)
-    ├── CompanySelector.jsx
-    ├── StatCards.jsx
-    ├── InsightPanel.jsx
-    ├── FinanceChart.jsx
-    └── ControlPanel.jsx
+    ├── CompanySelector.jsx       # 公司選擇下拉選單
+    ├── StatCards.jsx              # 營收/淨利/淨利率卡片
+    ├── InsightPanel.jsx            # 績效洞察面板
+    ├── FinanceChart.jsx            # Nivo 圖表（長條圖+折線圖疊層）
+    └── DataManagerTabs.jsx         # 數據管理標籤切換
+        ├── DataTable.jsx           # CRUD 表格（排序、搜尋、分頁）
+        ├── EditModal.jsx           # 新增/編輯 Modal
+        ├── DeleteConfirmDialog.jsx # 刪除確認對話框
+        ├── UndoToast.jsx           # 復原通知
+        └── ControlPanel.jsx        # 快速新增表單
 ```
 
 ### 狀態管理模式
 - **無外部狀態管理庫**（如 Redux）
 - **HomePage** 作為容器組件，管理所有狀態並通過 props 傳遞
-- 主要狀態：`companies`, `selectedCompany`, `financialData`, `selectedYear`
+- 主要狀態：`companies`, `selectedCompany`, `financialData`, `selectedYear`, `allFinancialData`, `activeTab`, `isModalOpen`, `editingRecord`, `deletingRecord`, `recentlyDeleted`
 
 ### 錯誤處理與降級
 - API 失敗時自動降級到 **demo 模式**
@@ -106,6 +162,7 @@ App.jsx (路由)
 - 底層：長條圖（營收）+ 上層：折線圖（淨利）
 - 支援點擊圖表元素切換年份
 - 自訂 Tooltip 顯示詳細財務數據
+- 字體：Y-axis 14px, X-axis 16px, 標籤 15px
 
 ### PDF 匯出
 - 專用的隱藏擷取區域 `#pdf-capture-area`
@@ -114,13 +171,14 @@ App.jsx (路由)
 
 ## 開發配置
 
-### 環境變數（`.env`）
+### 環境變數
+在 Vercel Dashboard 或本地 `.env` 設定：
 ```
-VITE_TURSO_DATABASE_URL=libsql://your-database.turso.io
-VITE_TURSO_AUTH_TOKEN=your-auth-token
+TURSO_DATABASE_URL=libsql://your-database.turso.io
+TURSO_AUTH_TOKEN=your-auth-token
 ```
 
-### Vite Proxy
+### Vite Proxy（僅本地開發）
 開發時 API 請求自動代理到後端：
 ```javascript
 proxy: {
@@ -130,8 +188,22 @@ proxy: {
   },
 }
 ```
+**注意**: 生產環境使用 Vercel Functions，無需 proxy。
 
 ### Playwright 測試
 - 測試目錄：`./tests`
 - 自動啟動 dev server
 - CI 環境重試 2 次
+
+## 部署
+
+### Vercel 部署
+```bash
+# 部署到生產環境
+npx vercel --prod
+
+# 部署到預覽環境
+npx vercel
+```
+
+生產環境：https://bpap.vercel.app

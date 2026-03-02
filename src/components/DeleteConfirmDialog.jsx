@@ -21,10 +21,14 @@ function DeleteConfirmDialog({ isOpen, record, onConfirm, onCancel }) {
         <div className="confirm-content">
           <p>您確定要刪除以下數據嗎？</p>
           <div className="record-details">
-            <div><strong>公司:</strong> {record.company}</div>
-            <div><strong>年份:</strong> {record.year}</div>
-            <div><strong>營收:</strong> {record.revenue.toLocaleString()} 百萬元</div>
-            <div><strong>淨利:</strong> {record.profit.toLocaleString()} 百萬元</div>
+            <div><strong>公司:</strong> {record.company_name || record.company}</div>
+            <div><strong>年度:</strong> {record.fiscal_year || record.year}</div>
+            {record.revenue !== undefined && (
+              <div><strong>營收:</strong> {record.revenue.toLocaleString()} 百萬元</div>
+            )}
+            {record.profit !== undefined && (
+              <div><strong>淨利:</strong> {record.profit.toLocaleString()} 百萬元</div>
+            )}
           </div>
           <p style={{ marginTop: '12px', fontSize: '12px' }}>
             此操作無法復原 (除非使用 Undo)

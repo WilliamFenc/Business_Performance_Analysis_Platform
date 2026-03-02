@@ -1,0 +1,12 @@
+/openspec:proposal 我要做一個plan：
+  我現在的專案開發佈署流程如下：
+(1)外部vercel網站：每次開發都是commit，再來更新於github，再來是佈署於vercel，後端是連接supabase雲端資料庫，這部份是已完成
+(2)也同步佈署於企業內：將更新於github的專案，於企業內部的jenkins方式，佈署於企業內，後端是連接supabase雲端資料庫(另外上傳.env，使用docker來佈署)，這部份是已完成                       (3)之後要做的plan：
+       a.佈署於企業內時，後端資料庫換為企業內的sql server，也就是之後將外部vercel網站當成dev site(開發機)，將企業內當成prod site                                                                             
+       b.也就是佈署於外部vercel網站時，佈署sop都沒有更動，commit-->update to github-->deploy to vercel                                                                                                        
+       c.但要佈署於企業內部時，jenkins會根據修改後的.env，build時，後端會連結sql server資料表(這個sql server已完全複製supabase資料表的內容)                                                                  
+請提供我proposal，我要確保修改完成後，佈署的過程，在
+(1)直接佈署到vercel動作是和原來一樣的
+(2)從企業內jenkins佈署時，將依據更新於github的專案，按下build時，它就會自動佈署在企業內部且後端是連接到企業內sql server已完全複製supabase資料表的內容，要上傳什麼.env 內容到jenkins請告訴我
+
+sql serverd 連接資訊請參考 dbhub mcp server的設定

@@ -1,25 +1,43 @@
 // Vercel Serverless Function: 匯出所有資料為 Excel
-import { getTursoClient } from './_lib.js';
+import { getSupabaseClient, convertToMillions } from './_lib.js';
 import * as XLSX from 'xlsx';
 
 export async function GET(request) {
   try {
-    const client = getTursoClient();
+    const supabase = getSupabaseClient();
 
-    // 查詢所有公司的財務資料
-    const result = await client.execute({
-      sql: `
-        SELECT c.name as company, fd.year, fd.revenue, fd.profit
-        FROM financial_data fd
-        JOIN companies c ON c.id = fd.company_id
-        ORDER BY c.name, fd.year
-      `,
+    // 查詢所有公司的財務資料，並關聯公司資料
+    const { data, error } = await supabase
+      .from('pl_income_basics')
+      .select(`
+        fiscal_year,
+        operating_revenue_total,
+        profit_before_tax,
+        companies!inner (
+          company_name
+        )
+      `)
+      .order('fiscal_year');
+
+    if (error) {
+      throw error;
+    }
+
+    // 建立匯出資料（單位已轉換為百萬元）
+    const exportData = [['公司名稱', '年份', '營收', '稅前淨利']];
+    data.forEach(row => {
+      exportData.push([
+        row.companies.company_name,
+        row.fiscal_year,
+        convertToMillions(row.operating_revenue_total),
+        convertToMillions(row.profit_before_tax),
+      ]);
     });
 
-    // 建立匯出資料
-    const exportData = [['公司名稱', '年份', '營收', '稅前淨利']];
-    result.rows.forEach(row => {
-      exportData.push([row.company, row.year, row.revenue, row.profit]);
+    // 排序
+    exportData.sort((a, b) => {
+      if (a[0] !== b[0]) return a[0].localeCompare(b[0]); // 依公司名稱排序
+      return b[1] - a[1]; // 依年份降序排序
     });
 
     // 建立 Excel 檔案

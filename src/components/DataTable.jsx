@@ -2,49 +2,58 @@ import { useState, useMemo } from 'react';
 
 /**
  * DataTable - 數據表格組件
- * 顯示所有公司的財務數據，支援排序、篩選、分頁
+ * 顯示財務資料，支援動態欄位、排序、篩選、分頁、水平捲動、欄位凍結
  */
-function DataTable({ data, onEdit, onDelete }) {
+function DataTable({
+  data,
+  columns,
+  onEdit,
+  onDelete,
+  stickyColumns = 2
+}) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState('company');
+  const [sortBy, setSortBy] = useState(columns?.[0]?.key || 'company');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [filters, setFilters] = useState({ company: '', year: '' });
+  const [filters, setFilters] = useState({ search: '' });
 
   const itemsPerPage = 10;
 
   // 排序與篩選邏輯
   const processedData = useMemo(() => {
-    // 確保 data 是陣列
     if (!Array.isArray(data)) {
       return [];
     }
 
     let result = [...data];
 
-    // 篩選
-    if (filters.company) {
+    // 搜尋篩選
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
       result = result.filter((item) =>
-        item.company.includes(filters.company)
-      );
-    }
-    if (filters.year) {
-      result = result.filter((item) =>
-        String(item.year).includes(filters.year)
+        Object.values(item).some(val =>
+          String(val ?? '').toLowerCase().includes(searchLower)
+        )
       );
     }
 
     // 排序
-    result.sort((a, b) => {
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
+    if (sortBy) {
+      result.sort((a, b) => {
+        let aVal = a[sortBy];
+        let bVal = b[sortBy];
 
-      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
-      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+        // 處理 null/undefined
+        if (aVal == null) aVal = '';
+        if (bVal == null) bVal = '';
 
-      if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
+        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+        if (aVal < bVal) return sortOrder === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
 
     return result;
   }, [data, filters, sortBy, sortOrder]);
@@ -71,6 +80,26 @@ function DataTable({ data, onEdit, onDelete }) {
     return sortOrder === 'asc' ? '▲' : '▼';
   };
 
+  const formatCellValue = (value, column) => {
+    if (value == null || value === '') return '-';
+
+    // 年度欄位不格式化千分位
+    if (column === 'fiscal_year' || column === 'year') {
+      return String(value);
+    }
+
+    // 數值格式化（假設金額類型欄位）
+    if (typeof value === 'number') {
+      // 如果是大的數字，加上千分位
+      if (Math.abs(value) >= 1000) {
+        return value.toLocaleString('zh-TW', { maximumFractionDigits: 0 });
+      }
+      return value.toString();
+    }
+
+    return String(value);
+  };
+
   if (!data || data.length === 0) {
     return (
       <div className="data-table-container">
@@ -82,75 +111,72 @@ function DataTable({ data, onEdit, onDelete }) {
   }
 
   return (
-    <div className="data-table-container">
+    <div className="data-table-wrapper">
       {/* 篩選器 */}
       <div className="table-filters">
         <input
           type="text"
-          placeholder="搜尋公司..."
-          value={filters.company}
+          placeholder="搜尋所有欄位..."
+          value={filters.search}
           onChange={(e) => {
-            setFilters({ ...filters, company: e.target.value });
+            setFilters({ search: e.target.value });
             setCurrentPage(1);
           }}
-        />
-        <input
-          type="text"
-          placeholder="篩選年份..."
-          value={filters.year}
-          onChange={(e) => {
-            setFilters({ ...filters, year: e.target.value });
-            setCurrentPage(1);
-          }}
+          className="table-search-input"
         />
       </div>
 
-      {/* 表格 */}
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th onClick={() => handleSort('company')}>
-              公司 {getSortIndicator('company')}
-            </th>
-            <th onClick={() => handleSort('year')}>
-              年份 {getSortIndicator('year')}
-            </th>
-            <th onClick={() => handleSort('revenue')}>
-              營收 {getSortIndicator('revenue')}
-            </th>
-            <th onClick={() => handleSort('profit')}>
-              淨利 {getSortIndicator('profit')}
-            </th>
-            <th>操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          {paginatedData.map((row, idx) => (
-            <tr key={`${row.company_id}-${row.year}-${idx}`}>
-              <td>{row.company}</td>
-              <td>{row.year}</td>
-              <td>{row.revenue.toLocaleString()}</td>
-              <td>{row.profit.toLocaleString()}</td>
-              <td>
-                <button
-                  className="table-action-btn edit"
-                  onClick={() => onEdit(row)}
-                  title="編輯"
+      {/* 表格容器 - 支援水平捲動 */}
+      <div className="data-table-scroll-container">
+        <table className="data-table data-table-multi-column">
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  onClick={col.sortable !== false ? () => handleSort(col.key) : undefined}
+                  className={col.sticky ? 'sticky' : ''}
+                  style={{ left: col.stickyIndex !== undefined ? `${col.stickyIndex * 100}px` : undefined }}
                 >
-                  ✏️
-                </button>
-                <button
-                  className="table-action-btn delete"
-                  onClick={() => onDelete(row)}
-                  title="刪除"
-                >
-                  🗑️
-                </button>
-              </td>
+                  {col.label} {col.sortable !== false && getSortIndicator(col.key)}
+                </th>
+              ))}
+              <th className="sticky action-column">操作</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {paginatedData.map((row, idx) => (
+              <tr key={`${row.tax_id || row.company_id}-${row.fiscal_year || row.year}-${idx}`}>
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={col.sticky ? 'sticky' : ''}
+                    style={{ left: col.stickyIndex !== undefined ? `${col.stickyIndex * 100}px` : undefined }}
+                  >
+                    {formatCellValue(row[col.key], col.key)}
+                  </td>
+                ))}
+                <td className="sticky action-column">
+                  <button
+                    className="table-action-btn edit"
+                    onClick={() => onEdit(row)}
+                    title="編輯"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    className="table-action-btn delete"
+                    onClick={() => onDelete(row)}
+                    title="刪除"
+                  >
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* 分頁 */}
       {totalPages > 1 && (
@@ -158,23 +184,25 @@ function DataTable({ data, onEdit, onDelete }) {
           <button
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => p - 1)}
+            className="pagination-btn"
           >
             上一頁
           </button>
-          <span>
+          <span className="pagination-info">
             第 {currentPage} 頁，共 {totalPages} 頁
             {processedData.length > itemsPerPage && ` (共 ${processedData.length} 筆)`}
           </span>
           <button
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => p + 1)}
+            className="pagination-btn"
           >
             下一頁
           </button>
         </div>
       )}
 
-      {processedData.length === 0 && (
+      {processedData.length === 0 && filters.search && (
         <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
           沒有符合條件的數據
         </div>
@@ -182,5 +210,13 @@ function DataTable({ data, onEdit, onDelete }) {
     </div>
   );
 }
+
+// 預設的簡化版欄位配置（用於向後相容）
+DataTable.defaultColumns = [
+  { key: 'company', label: '公司名稱', sticky: true, stickyIndex: 0 },
+  { key: 'year', label: '年份', sticky: true, stickyIndex: 1 },
+  { key: 'revenue', label: '營收（百萬元）' },
+  { key: 'profit', label: '稅前淨利（百萬元）' },
+];
 
 export default DataTable;

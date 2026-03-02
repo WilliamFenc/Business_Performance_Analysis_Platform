@@ -7,6 +7,7 @@ function StatCards({ companyName, labels, revenue, profit }) {
         avgRev: '--',
         avgProfit: '--',
         avgMargin: '--',
+        yearCount: 0,
       };
     }
 
@@ -19,7 +20,7 @@ function StatCards({ companyName, labels, revenue, profit }) {
     let avgMar = '0.0%';
     if (sumRev > 0) avgMar = ((sumPro / sumRev) * 100).toFixed(1) + '%';
 
-    return { avgRev, avgProfit: avgPro, avgMar };
+    return { avgRev, avgProfit: avgPro, avgMar, yearCount: count };
   }, [labels, revenue, profit]);
 
   return (
@@ -31,19 +32,19 @@ function StatCards({ companyName, labels, revenue, profit }) {
         </div>
       </div>
       <div className="stat-card">
-        <h3>5年平均營收</h3>
+        <h3>{stats.yearCount}年平均營收</h3>
         <div className="value">
           {stats.avgRev} <span className="stat-unit">百萬</span>
         </div>
       </div>
       <div className="stat-card">
-        <h3>5年平均淨利</h3>
+        <h3>{stats.yearCount}年平均淨利</h3>
         <div className="value">
           {stats.avgProfit} <span className="stat-unit">百萬</span>
         </div>
       </div>
       <div className="stat-card">
-        <h3>5年平均淨利率</h3>
+        <h3>{stats.yearCount}年平均淨利率</h3>
         <div className="value">{stats.avgMar}</div>
         <div className="stat-unit" style={{ fontSize: '12px' }}>(總淨利/總營收)</div>
       </div>

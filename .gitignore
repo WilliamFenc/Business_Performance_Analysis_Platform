@@ -45,3 +45,11 @@ pnpm-debug.log*
 .claude/debug/
 .claude/shell-snapshots/
 .env*.local
+
+# 測試暫存檔案
+test-results/
+playwright-report/
+*.png
+*.py
+demo.js
+screenshot.js
