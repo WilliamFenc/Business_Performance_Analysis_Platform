@@ -109,6 +109,20 @@ function ExecutiveSummaryCard({ company, selectedYear }) {
   );
 }
 
+// 將含「建議查核人員」的文字段落，從該詞起轉為粗體
+function renderWithBold(text) {
+  if (!text) return text;
+  const keyword = '建議查核人員';
+  const boldIndex = text.indexOf(keyword);
+  if (boldIndex === -1) return text;
+  return (
+    <>
+      {text.slice(0, boldIndex)}
+      <strong>{text.slice(boldIndex)}</strong>
+    </>
+  );
+}
+
 // 簡單的 Markdown 渲染函式
 function renderMarkdown(text) {
   if (!text) return null;
@@ -130,10 +144,10 @@ function renderMarkdown(text) {
         <ul key={idx} className="ai-summary-list">
           {lines.map((line, lineIdx) => {
             if (line.match(/^\d+\./)) {
-              return <li key={lineIdx}>{line.replace(/^\d+\.\s*/, '')}</li>;
+              return <li key={lineIdx}>{renderWithBold(line.replace(/^\d+\.\s*/, ''))}</li>;
             }
             if (line.match(/^-\s/)) {
-              return <li key={lineIdx}>{line.replace(/^-\s*/, '')}</li>;
+              return <li key={lineIdx}>{renderWithBold(line.replace(/^-\s*/, ''))}</li>;
             }
             return <p key={lineIdx}>{line}</p>;
           })}
@@ -142,7 +156,7 @@ function renderMarkdown(text) {
     }
 
     // 一般段落
-    return <p key={idx}>{paragraph}</p>;
+    return <p key={idx}>{renderWithBold(paragraph)}</p>;
   });
 }
 
